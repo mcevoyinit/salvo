@@ -167,7 +167,13 @@ class SwapPayBuilder:
 
         Each payment: {"to": addr, "amount": int, "memo": {...}}
         All succeed or all revert.
+
+        Raises:
+            ValueError: If payments list is empty.
         """
+        if not payments:
+            raise ValueError("payments list must not be empty")
+
         dex = StablecoinDEX()
         swap_call = dex.swap_exact_amount_in(
             token_in=token_in, token_out=token_out,
