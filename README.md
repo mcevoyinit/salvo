@@ -4,17 +4,27 @@
 
 Atomic swap+pay on [Tempo](https://tempo.xyz). Multiple economic actions, one transaction.
 
-## Live on testnet
+## Live on mainnet
 
 ```
-Swap AlphaUSD→pathUSD + pay recipient with memo (2 calls, 1 tx):
+3 payments in 1 atomic tx ($1.00 + $0.50 + $0.25), each with provenance hash:
+  https://explore.tempo.xyz/tx/0x40a47a91d59527e09b9ba9fb9c4e7459df5720808d1b503ca1f705f974996478
+
+pathUSD transfer with SHA-256 memo on mainnet:
+  https://explore.tempo.xyz/tx/0xfb6c9d7cf5b98a49fea06188abb28561720d9acae93930f0faba42aff4d2cc27
+```
+
+Also on testnet (swap+pay):
+
+```
+Swap AlphaUSD→pathUSD + pay with memo (2 calls, 1 tx):
   https://explore.moderato.tempo.xyz/tx/0xe467a6baffb7e892790b2822172b7392cca323a70f047bb42bb08067ce40884a
 
-Swap + pay 2 recipients with provenance hashes (3 calls, 1 tx):
+Swap + pay 2 recipients (3 calls, 1 tx):
   https://explore.moderato.tempo.xyz/tx/0x8def5b04de33b12bae764967dfc8a38edc8a0472afb97df5428849669345b8f9
 ```
 
-Click those. Two calls in one block. Both succeed or both revert.
+Click those. Multiple calls in one block. All succeed or all revert. Real money.
 
 ## Why this exists
 
