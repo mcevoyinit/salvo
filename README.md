@@ -40,6 +40,7 @@ This is something x402 can't do (one tx per request), Ethereum can't do without 
 
 ```python
 from salvo import SwapPayBuilder
+from pytempo.contracts.addresses import ALPHA_USD, PATH_USD
 
 sp = SwapPayBuilder().build(
     token_in=ALPHA_USD,

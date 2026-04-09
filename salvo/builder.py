@@ -22,9 +22,12 @@ from pytempo.contracts.addresses import (
 )
 
 
-CHAIN_ID = 42431
+# ----- Default config: Tempo TESTNET (Moderato) -----
+# For mainnet, override when constructing SwapPayBuilder:
+#   SwapPayBuilder(chain_id=42170)
+CHAIN_ID = 42431                   # testnet (Moderato)
 GAS_LIMIT = 500_000
-MAX_FEE = 25_000_000_000       # 25 gwei
+MAX_FEE = 25_000_000_000          # 25 gwei
 MAX_PRIORITY_FEE = 1_000_000_000  # 1 gwei
 
 STABLECOINS = {
