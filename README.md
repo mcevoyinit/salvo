@@ -1,30 +1,35 @@
-# flashpay
+# salvo
 
-Atomic swap+pay on [Tempo](https://tempo.xyz). Convert stablecoins and settle a payment in one transaction.
+> *sal·vo* — a simultaneous discharge of multiple pieces; all guns fired at once.
+
+Atomic swap+pay on [Tempo](https://tempo.xyz). Multiple economic actions, one transaction.
 
 ## Live on testnet
 
 ```
-Swap AlphaUSD→pathUSD + pay recipient (2 calls, 1 tx):
+Swap AlphaUSD→pathUSD + pay recipient with memo (2 calls, 1 tx):
   https://explore.moderato.tempo.xyz/tx/0xe467a6baffb7e892790b2822172b7392cca323a70f047bb42bb08067ce40884a
 
-Swap + pay 2 recipients (3 calls, 1 tx):
+Swap + pay 2 recipients with provenance hashes (3 calls, 1 tx):
   https://explore.moderato.tempo.xyz/tx/0x8def5b04de33b12bae764967dfc8a38edc8a0472afb97df5428849669345b8f9
 ```
 
+Click those. Two calls in one block. Both succeed or both revert.
+
+## Why this exists
+
+AI agents that pay for services face a basic problem: they hold one token but owe another. On Ethereum, that's two transactions — a swap and then a payment — with a gap in between where the price can move, the second tx can fail, or the agent runs out of gas.
+
+On Tempo, the 0x76 transaction type lets you batch multiple operations into a single atomic unit. Salvo uses this to combine a stablecoin swap and a service payment into one transaction. The swap converts the token, the payment settles the bill, and a SHA-256 memo hash links the whole thing to the task that triggered it. If any part fails, everything reverts.
+
+No smart contracts to deploy. No multicall routers. No keeper infrastructure. Just two `Call` objects in a tuple.
+
+This is something x402 can't do (one tx per request), Ethereum can't do without deploying contracts (ERC-4337 + multicall), and Solana can't do with native fee sponsorship and session key scoping. On Tempo it's a few lines of Python.
+
 ## What it does
 
-Builds a single `TempoTransaction` with two calls:
-
-1. `StablecoinDEX.swap_exact_amount_in()` — convert token A to token B
-2. `TIP20.transfer_with_memo()` — pay a recipient in token B with a provenance hash
-
-Both succeed or both revert. If the swap fails (bad rate, no liquidity), the payment never happens. If the payment fails (insufficient balance post-swap), the swap rolls back.
-
-On Ethereum you'd need a custom router contract for this. On Tempo it's two Call objects in a tuple.
-
 ```python
-from flashpay import SwapPayBuilder
+from salvo import SwapPayBuilder
 
 sp = SwapPayBuilder().build(
     token_in=ALPHA_USD,
@@ -33,44 +38,94 @@ sp = SwapPayBuilder().build(
     min_swap_out=990_000,      # accept 1% slippage
     pay_to="0xRecipient",
     pay_amount=990_000,        # pay $0.99 pathUSD
-    memo={"task": "research", "agent": "a1"},
+    memo={"task": "research", "agent": "a1", "confidence": 0.92},
 )
 
 # sp.tx is a TempoTransaction with 2 calls — sign and submit
+receipt = await submitter.sign_and_send(sp.tx)
+print(receipt.explorer_url)
 ```
 
-Multi-party settlement in one atomic tx:
+The swap uses Tempo's native `StablecoinDEX`. The payment uses `TIP20.transfer_with_memo()` with a 32-byte SHA-256 hash of your structured metadata. The full JSON lives off-chain; the hash on-chain proves the link.
+
+### Multi-party settlement
+
+Swap once, pay several parties. All or nothing.
 
 ```python
 sp = SwapPayBuilder().build_multi_pay(
     token_in=ALPHA_USD, token_out=PATH_USD,
     swap_amount=5_000_000, min_swap_out=4_900_000,
     payments=[
-        {"to": provider_a, "amount": 2_000_000, "memo": {"service": "data"}},
-        {"to": provider_b, "amount": 1_500_000, "memo": {"service": "inference"}},
-        {"to": treasury,   "amount": 1_000_000, "memo": {"type": "fee"}},
+        {"to": data_provider, "amount": 2_000_000, "memo": {"service": "search"}},
+        {"to": model_provider, "amount": 1_500_000, "memo": {"service": "inference"}},
+        {"to": treasury, "amount": 1_000_000, "memo": {"type": "platform_fee"}},
     ],
 )
-# 4 calls in 1 tx: swap + 3 payments. All or nothing.
+# 4 calls in 1 tx: swap + 3 payments
 ```
+
+### Fee sponsorship
+
+Agents don't need gas. The master pays.
+
+```python
+sp = SwapPayBuilder().build(
+    ...,
+    sponsored=True,  # awaiting_fee_payer=True
+)
+```
+
+## Use cases
+
+**Just-in-time treasury.** Agent holds USDC but a service wants pathUSD. Instead of pre-converting and holding idle balances, the agent swaps and pays in one shot. No leftover dust, no wasted capital.
+
+**Conditional payment.** The swap acts as a price check. If the exchange rate is bad (slippage exceeds your limit), the whole tx reverts — including the payment. The agent never overpays because a bad swap kills the entire operation.
+
+**Atomic multi-party settlement.** A research swarm completes a task: the data provider, the model provider, and the platform treasury all get paid in one transaction. If any payment fails, none go through. No partial settlements, no reconciliation headaches.
+
+## Tempo primitives used
+
+| Primitive | What salvo does with it |
+|-----------|------------------------|
+| `TempoTransaction.calls` | Batch swap + payment(s) into one atomic tx |
+| `StablecoinDEX.swap_exact_amount_in()` | Convert between any TIP-20 stablecoins |
+| `TIP20.transfer_with_memo()` | Pay with a 32-byte provenance hash |
+| `awaiting_fee_payer` | Let a sponsor pay gas — agents hold zero native tokens |
+| `nonce_key` | Parallel execution lanes for concurrent agents |
 
 ## Install
 
 ```bash
-pip install flashpay
+pip install salvo
 ```
 
-## Tests
+From source:
 
 ```bash
+git clone https://github.com/mcevoyinit/salvo.git
+cd salvo
 pip install -e ".[dev]"
-pytest tests/ -v
+pytest tests/ -v  # 30 tests
 ```
+
+## Testnet
+
+Tempo Moderato testnet. Fund your wallet for free:
+
+```bash
+curl -X POST https://rpc.moderato.tempo.xyz \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"tempo_fundAddress","params":["YOUR_ADDRESS"],"id":1}'
+```
+
+Note: you need to approve the StablecoinDEX to spend your tokens before swapping. See `tests/test_live.py` for the approval flow.
 
 ## Related
 
-- [Maestro](https://github.com/mcevoyinit/maestro) — zero-gas agent orchestrator (session keys, fee sponsorship)
+- [Maestro](https://github.com/mcevoyinit/maestro) — zero-gas agent orchestrator (session keys, fee sponsorship, parallel execution)
 - [Parley](https://github.com/mcevoyinit/parley) — tiered pricing for MPP endpoints
+- [Agent Treaty](https://github.com/mcevoyinit/tempo-agent-treaty) — multi-field OTC negotiation between agents
 
 ## License
 

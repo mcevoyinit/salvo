@@ -7,8 +7,8 @@ import pytest
 from mpp.methods.tempo import TempoAccount
 from pytempo.contracts.addresses import PATH_USD, ALPHA_USD
 
-from flashpay.builder import SwapPayBuilder, memo_hash
-from flashpay.submitter import TxSubmitter
+from salvo.builder import SwapPayBuilder, memo_hash
+from salvo.submitter import TxSubmitter
 
 MASTER_KEY = "0x" + "ab" * 32
 RECIPIENT_KEY = "0x" + "cd" * 32
@@ -68,7 +68,7 @@ class TestLiveSwapPay:
             min_swap_out=1,            # accept any output (testnet)
             pay_to=recipient.address,
             pay_amount=50_000,         # $0.05 pathUSD
-            memo={"task": "flashpay-live-test", "type": "swap+pay"},
+            memo={"task": "salvo-live-test", "type": "swap+pay"},
         )
 
         assert sp.num_calls == 2

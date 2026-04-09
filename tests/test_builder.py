@@ -5,7 +5,7 @@ from pytempo import TempoTransaction, Call
 from pytempo.contracts.addresses import PATH_USD, ALPHA_USD, BETA_USD
 from mpp.methods.tempo import TempoAccount
 
-from flashpay.builder import SwapPayBuilder, SwapPay, memo_hash, STABLECOINS
+from salvo.builder import SwapPayBuilder, SwapPay, memo_hash, STABLECOINS
 
 
 RECIPIENT = TempoAccount.from_key("0x" + "dd" * 32).address
