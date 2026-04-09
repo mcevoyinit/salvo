@@ -12,7 +12,7 @@ from mpp.methods.tempo import TempoAccount
 
 logger = logging.getLogger(__name__)
 
-RPC_URL = "https://rpc.moderato.tempo.xyz"
+RPC_URL = "https://rpc.tempo.xyz"
 
 # Explorer URL by RPC endpoint. Mainnet RPC → mainnet explorer, else testnet.
 _EXPLORER_MAP = {

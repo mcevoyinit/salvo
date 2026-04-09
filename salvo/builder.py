@@ -22,10 +22,10 @@ from pytempo.contracts.addresses import (
 )
 
 
-# ----- Default config: Tempo TESTNET (Moderato) -----
-# For mainnet, override when constructing SwapPayBuilder:
-#   SwapPayBuilder(chain_id=42170)
-CHAIN_ID = 4217  # Tempo mainnet (use 42431 for Moderato testnet)                   # testnet (Moderato)
+# ----- Default config: Tempo mainnet -----
+# For testnet, override when constructing SwapPayBuilder:
+#   SwapPayBuilder(chain_id=42431)
+CHAIN_ID = 4217  # Tempo mainnet (use 42431 for Moderato testnet)
 GAS_LIMIT = 500_000
 MAX_FEE = 25_000_000_000          # 25 gwei
 MAX_PRIORITY_FEE = 1_000_000_000  # 1 gwei
@@ -111,6 +111,13 @@ class SwapPayBuilder:
             sponsored: If True, awaiting_fee_payer=True.
             extra_calls: Additional Calls to include in the batch.
         """
+        if swap_amount <= 0:
+            raise ValueError(f"swap_amount must be positive, got {swap_amount}")
+        if pay_amount <= 0:
+            raise ValueError(f"pay_amount must be positive, got {pay_amount}")
+        if token_in == token_out:
+            raise ValueError("token_in and token_out must be different (self-swap)")
+
         dex = StablecoinDEX()
         swap_call = dex.swap_exact_amount_in(
             token_in=token_in,

@@ -1,6 +1,7 @@
 """Tests for SwapPayBuilder — atomic transaction construction."""
 
 import json
+import pytest
 from pytempo import TempoTransaction, Call
 from pytempo.contracts.addresses import PATH_USD, ALPHA_USD, BETA_USD
 from mpp.methods.tempo import TempoAccount
@@ -55,7 +56,7 @@ class TestBuildBasic:
             swap_amount=1_000_000, min_swap_out=900_000,
             pay_to=RECIPIENT, pay_amount=900_000,
         )
-        assert sp.tx.chain_id == 42431
+        assert sp.tx.chain_id == 4217
 
     def test_calls_are_call_objects(self):
         sp = BUILDER.build(
@@ -244,6 +245,20 @@ class TestMultiPay:
             sponsored=True,
         )
         assert sp.is_sponsored
+
+
+class TestInputValidation:
+    def test_zero_swap_amount_rejected(self):
+        with pytest.raises(ValueError):
+            SwapPayBuilder().build(token_in=ALPHA_USD, token_out=PATH_USD, swap_amount=0, min_swap_out=0, pay_to=RECIPIENT, pay_amount=100, memo={"x": 1})
+
+    def test_zero_pay_amount_rejected(self):
+        with pytest.raises(ValueError):
+            SwapPayBuilder().build(token_in=ALPHA_USD, token_out=PATH_USD, swap_amount=100, min_swap_out=90, pay_to=RECIPIENT, pay_amount=0, memo={"x": 1})
+
+    def test_self_swap_rejected(self):
+        with pytest.raises(ValueError):
+            SwapPayBuilder().build(token_in=ALPHA_USD, token_out=ALPHA_USD, swap_amount=100, min_swap_out=90, pay_to=RECIPIENT, pay_amount=50, memo={"x": 1})
 
 
 class TestStablecoins:
