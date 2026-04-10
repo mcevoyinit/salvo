@@ -34,7 +34,7 @@ On Tempo, the 0x76 transaction type lets you batch multiple operations into a si
 
 No smart contracts to deploy. No multicall routers. No keeper infrastructure. Just two `Call` objects in a tuple.
 
-This is something x402 can't do (one tx per request), Ethereum can't do without deploying contracts (ERC-4337 + multicall), and Solana can't do with native fee sponsorship and session key scoping. On Tempo it's a few lines of Python.
+The same atomicity is achievable elsewhere — Ethereum via multicall or ERC-4337 bundlers, Solana via instruction composition. What Tempo gives you on top is native fee sponsorship as a transaction flag, stablecoin-native gas, and sub-cent settlement, so the pattern is practical for agent-scale workloads rather than something you reach for once and amortize. x402 is the exception: it's one tx per request by spec, so this particular flow doesn't fit.
 
 ## What it does
 
